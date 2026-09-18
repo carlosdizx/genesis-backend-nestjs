@@ -98,7 +98,7 @@ export default class AbstractRepository<
     this.logger.error = () => {};
   }
 
-  private toClean(entity: TModel | null): TModel | null {
+  private toClean(entity: TModel): TModel | null {
     if (!entity) return null;
     return typeof entity.toJSON === 'function'
       ? (entity.toJSON() as TModel)
