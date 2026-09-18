@@ -2,18 +2,20 @@ import {
   Column,
   CreatedAt,
   DataType,
+  Default,
   DeletedAt,
   Model,
   PrimaryKey,
   UpdatedAt,
 } from 'sequelize-typescript';
 
-export class BaseModel extends Model<BaseModel> {
+export abstract class BaseModel<
+  TModelAttributes extends object = any,
+  TCreationAttributes extends object = TModelAttributes,
+> extends Model<TModelAttributes, TCreationAttributes> {
   @PrimaryKey
-  @Column({
-    type: DataType.UUID,
-    defaultValue: DataType.UUIDV4,
-  })
+  @Default(DataType.UUIDV4)
+  @Column(DataType.UUID)
   declare id: string;
 
   @CreatedAt
@@ -21,7 +23,12 @@ export class BaseModel extends Model<BaseModel> {
 
   @UpdatedAt
   declare updatedAt: Date;
+}
 
+export abstract class SoftDeleteModel<
+  TModelAttributes extends object = any,
+  TCreationAttributes extends object = TModelAttributes,
+> extends BaseModel<TModelAttributes, TCreationAttributes> {
   @DeletedAt
-  declare deletedAt?: Date;
+  declare deletedAt: Date | null;
 }
