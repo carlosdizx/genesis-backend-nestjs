@@ -14,7 +14,6 @@ const sequelizeConfigFactory = (
     DB_NAME: configService.get('DB_NAME', { infer: true }),
     DB_LOGGING: configService.get('DB_LOGGING', { infer: true }),
   }),
-  autoLoadModels: true,
   synchronize: false,
 });
 
