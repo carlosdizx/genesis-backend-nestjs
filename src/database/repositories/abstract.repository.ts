@@ -105,7 +105,7 @@ export default class AbstractRepository<
       : entity;
   }
 
-  private toCleanArray(entities: (TModel | any)[]): TModel[] {
+  private toCleanArray(entities: TModel[]): TModel[] {
     return entities.map((entity) => this.toClean(entity) as TModel);
   }
 
