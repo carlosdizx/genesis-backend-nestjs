@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import validateEnv from './config/env.config';
+import DatabaseModule from '../database/database.module';
 
 @Global()
 @Module({
@@ -9,6 +10,7 @@ import validateEnv from './config/env.config';
       isGlobal: true,
       validate: validateEnv,
     }),
+    DatabaseModule,
   ],
   exports: [ConfigModule],
 })
