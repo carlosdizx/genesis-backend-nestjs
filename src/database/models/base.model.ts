@@ -14,7 +14,7 @@ export abstract class BaseModel<
   TCreationAttributes extends object = TModelAttributes,
 > extends Model<TModelAttributes, TCreationAttributes> {
   @PrimaryKey
-  @Default(DataType.UUIDV4)
+  @Default(DataType.UUID)
   @Column(DataType.UUID)
   declare id: string;
 
@@ -23,12 +23,7 @@ export abstract class BaseModel<
 
   @UpdatedAt
   declare updatedAt: Date;
-}
 
-export abstract class SoftDeleteModel<
-  TModelAttributes extends object = any,
-  TCreationAttributes extends object = TModelAttributes,
-> extends BaseModel<TModelAttributes, TCreationAttributes> {
   @DeletedAt
   declare deletedAt: Date | null;
 }
