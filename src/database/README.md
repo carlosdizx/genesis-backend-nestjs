@@ -1,11 +1,16 @@
-# eruditia-back — Capa de base de datos
+# Capa de base de datos (`src/database/`)
 
-Este documento describe cómo está montada la capa de datos del proyecto (`src/database/`) y las reglas que
-**cualquier persona o IA** debe seguir al tocarla. No es opcional: el proyecto está diseñado para que
-migraciones, seeds, modelos, repositorios y servicios sigan siempre el mismo patrón, y las herramientas
-(`db:*` scripts) asumen que se respeta.
+Este documento describe cómo está montada la capa de datos de este proyecto y las reglas que hay que seguir
+al tocarla — para cualquier persona o asistente de código, sin importar la herramienta que use. El alcance de
+este documento es únicamente `src/database/` (modelos, migraciones, seeds, repositorios, servicio CRUD) y
+cómo lo consume cada feature en `src/<feature>/`. El proyecto está diseñado para que migraciones, seeds,
+modelos, repositorios y servicios sigan siempre el mismo patrón, y las herramientas (`db:*` scripts) asumen
+que se respeta.
 
-## Mapa de `src/database`
+Este proyecto usa **Bun** como package manager y runner (`bun.lock` en la raíz) — todos los comandos abajo son
+`bun run ...`, no `npm run ...`.
+
+## Mapa de esta carpeta
 
 ```
 src/database/
@@ -26,7 +31,7 @@ src/database/
 │   └── abstract.repository.ts    # CRUD genérico sobre cualquier modelo (create, findAll, etc.)
 ├── services/
 │   └── crud.service.ts           # Capa de servicio genérica que delega en un repositorio
-├── scripts/                      # Entry points que corren los npm scripts db:*
+├── scripts/                      # Entry points que corren los scripts db:*
 ├── util/database-options.util.ts # Arma SequelizeOptions común (incluye `models` de models/index.ts)
 └── database.module.ts            # Módulo Nest que registra Sequelize (SequelizeModule.forRootAsync)
 ```
@@ -50,7 +55,7 @@ bun run db:seed:generate -- seed_initial_examples
 
 Esto crea `src/database/migrations/<timestamp>-create_examples_table.ts` (o el equivalente en `seeders/`) con
 el `up`/`down` vacíos (`// TODO: implement`). **Después de generarlo es cuando se edita el contenido** —
-nunca se crea el archivo directamente con `Write`.
+nunca se crea el archivo directamente a mano.
 
 Si no se pasa nombre, el generador le pone uno aleatorio (`idUtil('mig', 10)` / `idUtil('seed', 10)`); siempre
 es mejor pasar un nombre descriptivo.
@@ -75,16 +80,16 @@ es mejor pasar un nombre descriptivo.
 
 | Comando | Qué hace |
 |---|---|
-| `npm run db:migration:generate -- <nombre>` | Crea un archivo de migración vacío en `src/database/migrations/` |
-| `npm run db:migrate` | Corre TODAS las migraciones pendientes (`up`) |
-| `npm run db:migrate:undo` | Revierte la ÚLTIMA migración ejecutada (`down`) |
-| `npm run db:migrate:undo:all` | Revierte TODAS las migraciones (`down` hasta el principio) |
-| `npm run db:migrate:status` | Lista migraciones ejecutadas y pendientes, sin aplicar nada |
-| `npm run db:seed:generate -- <nombre>` | Crea un archivo de seed vacío en `src/database/seeders/` |
-| `npm run db:seed` | Corre todos los seeds pendientes |
-| `npm run db:seed:undo` | Revierte el último seed ejecutado |
-| `npm run db:seed:undo:all` | Revierte todos los seeds |
-| `npm run db:seed:status` | Lista seeds ejecutados y pendientes |
+| `bun run db:migration:generate -- <nombre>` | Crea un archivo de migración vacío en `src/database/migrations/` |
+| `bun run db:migrate` | Corre TODAS las migraciones pendientes (`up`) |
+| `bun run db:migrate:undo` | Revierte la ÚLTIMA migración ejecutada (`down`) |
+| `bun run db:migrate:undo:all` | Revierte TODAS las migraciones (`down` hasta el principio) |
+| `bun run db:migrate:status` | Lista migraciones ejecutadas y pendientes, sin aplicar nada |
+| `bun run db:seed:generate -- <nombre>` | Crea un archivo de seed vacío en `src/database/seeders/` |
+| `bun run db:seed` | Corre todos los seeds pendientes |
+| `bun run db:seed:undo` | Revierte el último seed ejecutado |
+| `bun run db:seed:undo:all` | Revierte todos los seeds |
+| `bun run db:seed:status` | Lista seeds ejecutados y pendientes |
 
 Todos leen la conexión de `.env` (`DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME`, `DB_LOGGING`,
 validados con Zod en `src/common/schemas/database.schema.ts`).
@@ -96,7 +101,8 @@ El `up` y el `down` de cada migración/seed con contenido real deben abrir su pr
 aunque una sola sentencia DDL/DML ya sea atómica en Postgres — es el patrón fijo del proyecto para que
 migraciones con varios pasos (crear tabla + índices + constraints, por ejemplo) sean todo-o-nada.
 
-Ejemplo real y canónico — `src/database/migrations/20260918100727-create_examples_table.ts.example`:
+Ejemplo real y canónico (mantenido a propósito con extensión `.ts.example` para que Umzug no lo tome como una
+migración pendiente) — `src/database/migrations/20260918100727-create_examples_table.ts.example`:
 
 ```ts
 import { DataTypes, QueryInterface } from 'sequelize';
@@ -324,9 +330,9 @@ export default class ExamplesController {
 
 ## Checklist: agregar una entidad nueva
 
-1. `npm run db:migration:generate -- create_<tabla>_table` y completar `up`/`down` con transacción manual
+1. `bun run db:migration:generate -- create_<tabla>_table` y completar `up`/`down` con transacción manual
    (ver plantilla arriba). Columnas en snake_case; si hay soft delete, incluir `deleted_at`.
-2. `npm run db:migrate` para aplicarla (y `db:migrate:status` para confirmar).
+2. `bun run db:migrate` para aplicarla (y `db:migrate:status` para confirmar).
 3. Modelo en `src/database/models/<nombre>.model.ts`, extendiendo `BaseModel` (o `Model` si no debe tener
    soft delete), con `@Table({ tableName: '<tabla>', underscored: true, paranoid: true })`.
 4. Registrar el modelo en `src/database/models/index.ts`.
@@ -334,7 +340,7 @@ export default class ExamplesController {
 6. Servicio en `src/<feature>/<nombre>.service.ts`, extendiendo `CrudService<TuModel, TuRepository>` +
    métodos de negocio propios.
 7. Controlador + DTOs + módulo Nest, como en `src/examples/`.
-8. Si hace falta data inicial: `npm run db:seed:generate -- seed_<algo>` con el mismo patrón de transacción.
+8. Si hace falta data inicial: `bun run db:seed:generate -- seed_<algo>` con el mismo patrón de transacción.
 
 ## Gotchas ya encontrados en este proyecto (evitar repetirlos)
 
@@ -361,10 +367,10 @@ export default class ExamplesController {
   `RepositoryOptionsInterface` es opcional; si no se pasa, `AbstractRepository` no toca el campo `id` y deja
   que el default de la base de datos (definido en `BaseModel`/la migración) se encargue.
 
-## Reglas rápidas para agentes de IA
+## Resumen rápido
 
-- Nunca crear un archivo dentro de `src/database/migrations/` o `src/database/seeders/` con `Write` — siempre
-  correr el generador (`db:migration:generate` / `db:seed:generate`) y editar el archivo resultante.
+- Nunca crear un archivo dentro de `migrations/` o `seeders/` a mano — siempre correr el generador
+  (`db:migration:generate` / `db:seed:generate`) y editar el archivo resultante.
 - Nunca calcular el timestamp del nombre de archivo a mano.
 - Todo `up`/`down` con contenido real va envuelto en `queryInterface.sequelize.transaction()` con
   `commit`/`rollback` explícitos.
@@ -372,5 +378,5 @@ export default class ExamplesController {
   `src/database/models/index.ts`.
 - Nunca reimplementar CRUD a mano en un repositorio o servicio de feature — extender `AbstractRepository` /
   `CrudService` y solo agregar los métodos de negocio que no existan ya.
-- Antes de dar por buena una migración o un modelo nuevo, correr `npm run db:migrate:status` y, si se puede,
+- Antes de dar por buena una migración o un modelo nuevo, correr `bun run db:migrate:status` y, si se puede,
   probar `db:migrate` → `db:migrate:undo` contra una base real para confirmar que el ciclo completo funciona.
