@@ -6,6 +6,7 @@ import {
   DeletedAt,
   Model,
   PrimaryKey,
+  Sequelize,
   UpdatedAt,
 } from 'sequelize-typescript';
 
@@ -14,7 +15,7 @@ export abstract class BaseModel<
   TCreationAttributes extends object = TModelAttributes,
 > extends Model<TModelAttributes, TCreationAttributes> {
   @PrimaryKey
-  @Default(DataType.UUID)
+  @Default(Sequelize.literal('uuidv7()'))
   @Column(DataType.UUID)
   declare id: string;
 
