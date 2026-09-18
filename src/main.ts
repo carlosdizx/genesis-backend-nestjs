@@ -12,6 +12,14 @@ const bootstrap = async () => {
 
   const configService = app.get(ConfigService<Env, true>);
 
+  const terminalLogger = new Logger('AUX LOGGER');
+
+  console.log = (...data: any[]) => terminalLogger.log(data);
+  console.debug = (...data: any[]) => terminalLogger.debug(data);
+  console.info = (...data: any[]) => terminalLogger.verbose(data);
+  console.error = (...data: any[]) => terminalLogger.error(data);
+  console.warn = (...data: any[]) => terminalLogger.warn(data);
+
   app.useLogger(configService.get('LOG_LEVELS', { infer: true }));
 
   const logger = new Logger('App Bootstrap');
