@@ -1,5 +1,6 @@
 import { SequelizeOptions } from 'sequelize-typescript';
 import DatabaseEnvInterface from '../interfaces/database-env.interface';
+import models from '../models';
 
 const databaseOptionsUtil = (env: DatabaseEnvInterface): SequelizeOptions => {
   return {
@@ -10,6 +11,7 @@ const databaseOptionsUtil = (env: DatabaseEnvInterface): SequelizeOptions => {
     password: env.DB_PASSWORD,
     database: env.DB_NAME,
     logging: env.DB_LOGGING ? console.log : false,
+    models,
   };
 };
 
