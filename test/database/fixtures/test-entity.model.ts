@@ -11,7 +11,7 @@ import {
 } from 'sequelize-typescript';
 
 @Table({ tableName: 'test_entities', underscored: true, paranoid: true })
-export default class TestEntity extends Model {
+export default class TestEntityModel extends Model {
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column(DataType.UUID)
