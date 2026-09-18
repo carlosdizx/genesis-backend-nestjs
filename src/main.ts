@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import AppModule, { ObserveInstrument } from './app.module';
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import Env from './common/schemas/env.schema';
 import { ConfigService } from '@nestjs/config';
 
@@ -21,6 +21,14 @@ const bootstrap = async () => {
   console.warn = (...data: any[]) => terminalLogger.warn(data);
 
   app.useLogger(configService.get('LOG_LEVELS', { infer: true }));
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
 
   const logger = new Logger('App Bootstrap');
 
