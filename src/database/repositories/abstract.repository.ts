@@ -25,7 +25,7 @@ export default class AbstractRepository<
   TModel extends Model,
 > implements RepositoryInterface<TModel> {
   protected readonly logger: Logger;
-  protected readonly idGenerator: () => string;
+  protected readonly idGenerator?: () => string;
 
   protected readonly createMessage: string;
   protected readonly insertManyMessage: string;
@@ -114,12 +114,10 @@ export default class AbstractRepository<
     options?: CreateOptions<Attributes<TModel>>,
   ): Promise<TModel> {
     try {
-      const id = { id: this.idGenerator() };
-
       const entity = await this.model.create(
         {
           ...dto,
-          ...id,
+          ...this.generateIdObject(),
         },
         options,
       );
@@ -138,7 +136,7 @@ export default class AbstractRepository<
     try {
       const identifiedDtos = dtos.map((dto) => ({
         ...dto,
-        id: this.idGenerator(),
+        ...this.generateIdObject(),
       }));
 
       const entities = await this.model.bulkCreate(identifiedDtos, options);
@@ -156,14 +154,15 @@ export default class AbstractRepository<
       CreationAttributes<TModel>
     >,
   ): Promise<[TModel, boolean]> {
-    const id = { id: this.idGenerator() };
     try {
       const modifiedOptions: FindOrCreateOptions<
         Attributes<TModel>,
         CreationAttributes<TModel>
       > = {
         ...options,
-        defaults: options.defaults ? { ...options.defaults, ...id } : undefined,
+        defaults: options.defaults
+          ? { ...options.defaults, ...this.generateIdObject() }
+          : undefined,
       };
 
       const [entity, created] = await this.model.findOrCreate(modifiedOptions);
