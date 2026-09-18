@@ -3,7 +3,7 @@ import { Model } from 'sequelize';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default interface RepositoryOptionsInterface<T extends Model> {
-  idGenerator: () => string;
+  idGenerator?: () => string;
   logger?: Logger;
   createMessage?: string;
   insertManyMessage?: string;
