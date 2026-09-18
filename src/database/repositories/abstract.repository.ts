@@ -88,6 +88,12 @@ export default class AbstractRepository<
     this.transactionMessage = transactionMessage;
   }
 
+  private generateIdObject() {
+    if (this.idGenerator) return { id: this.idGenerator() };
+
+    return undefined;
+  }
+
   public unassignLoggerError() {
     this.logger.error = () => {};
   }
