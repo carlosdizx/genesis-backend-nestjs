@@ -225,4 +225,43 @@ describe('AbstractRepository', () => {
       await expect(found).rejects.toThrow(opts.findByPkMessage);
     });
   });
+
+  describe('find One Method', () => {
+    it('should be correct', async () => {
+      const name = 'Carlos';
+
+      await repository.create({ id: randomUUID(), name });
+
+      const found = await repository.findOne({ name }, false);
+
+      expect(found).toBeDefined();
+      expect(found).toHaveProperty('id');
+      expect(found).toHaveProperty('name');
+      expect(found.name).toEqual(name);
+    });
+
+    it('should be not found', async () => {
+      const name = 'Ernesto';
+
+      await repository.create({ id: randomUUID(), name });
+
+      const found = repository.findOne({ id: name }, true);
+
+      await expect(found).rejects.toThrow();
+      await expect(found).rejects.toThrow(NotFoundException);
+      await expect(found).rejects.toThrow(opts.findOneNotFoundMessage);
+    });
+
+    it('should be throw exception', async () => {
+      const id = [undefined] as unknown as string;
+
+      const found = repository.findOne({ id, name: id }, false, {
+        attributes: ['xxx'],
+      });
+
+      await expect(found).rejects.toThrow();
+      await expect(found).rejects.toThrow(ConflictException);
+      await expect(found).rejects.toThrow(opts.findOneMessage);
+    });
+  });
 });
