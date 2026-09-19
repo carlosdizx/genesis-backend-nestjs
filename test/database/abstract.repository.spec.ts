@@ -5,6 +5,8 @@ import { ConflictException, Logger, NotFoundException } from '@nestjs/common';
 import AbstractRepository from '../../src/database/repositories/abstract.repository';
 import TestRepository from './fixtures/test.repository';
 import { randomUUID } from 'node:crypto';
+import PaginationDto from '../../src/common/dto/pagination.dto';
+import DataRangeEnum from '../../src/common/enums/data-range.enum';
 
 const length = 10000;
 const logger = new Logger('Test logger');
@@ -282,6 +284,47 @@ describe('AbstractRepository', () => {
 
     it('should be exception', async () => {
       const list = repository.findAll({ attribute: ['xxx'] });
+
+      await expect(list).rejects.toThrow();
+      await expect(list).rejects.toThrow(ConflictException);
+      await expect(list).rejects.toThrow(opts.findAllMessage);
+    });
+  });
+
+  describe('find All Paginated Method', () => {
+    it('should be correct', async () => {
+      const entities = [];
+      for (let i = 0; i < length; i++) {
+        entities.push({ name: `name-${i}` });
+      }
+      const dto = new PaginationDto();
+      dto.page = 1;
+      dto.pageSize = 10;
+      dto.orderBy = 'createdAt';
+      dto.range = DataRangeEnum.THIS_MONTH;
+
+      await repository.insertMany(entities);
+
+      const list = await repository.findAllPaginated(dto);
+
+      expect(list).toBeDefined();
+      expect(list.meta.page).toEqual(dto.page);
+      expect(list.meta.pageSize).toEqual(dto.pageSize);
+
+      dto.pageSize = 100;
+      dto.page = 1000000;
+
+      await repository.findAllPaginated(dto);
+    });
+
+    it('should be exception', async () => {
+      const dto = new PaginationDto();
+
+      const list = repository.findAllPaginated(
+        dto,
+        {},
+        { attributes: ['xxx'] },
+      );
 
       await expect(list).rejects.toThrow();
       await expect(list).rejects.toThrow(ConflictException);
