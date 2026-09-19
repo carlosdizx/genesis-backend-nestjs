@@ -1,7 +1,7 @@
 import { Sequelize } from 'sequelize-typescript';
 import TestEntityModel from './fixtures/test-entity.model';
 import RepositoryOptionsInterface from '../../src/database/interfaces/repository-options.interface';
-import { ConflictException, Logger } from '@nestjs/common';
+import { ConflictException, Logger, NotFoundException } from '@nestjs/common';
 import AbstractRepository from '../../src/database/repositories/abstract.repository';
 import TestRepository from './fixtures/test.repository';
 import { randomUUID } from 'node:crypto';
@@ -182,6 +182,47 @@ describe('AbstractRepository', () => {
       await expect(res).rejects.toThrow();
       await expect(res).rejects.toThrow(ConflictException);
       await expect(res).rejects.toThrow(opts.findOrCreateMessage);
+    });
+  });
+
+  describe('find by PK Method', () => {
+    it('should be correct', async () => {
+      const id = randomUUID();
+      const name = randomUUID().concat('-name');
+
+      await repository.create({ id, name });
+
+      const found = await repository.findByPk(id, false);
+
+      expect(found).toBeDefined();
+      expect(found).toHaveProperty('id');
+      expect(found).toHaveProperty('name');
+      expect(found.name).toEqual(name);
+      expect(found.id).not.toEqual(name);
+    });
+
+    it('should be not found', async () => {
+      const id = randomUUID();
+
+      await repository.create({ id });
+
+      const found = repository.findByPk('id', true);
+
+      await expect(found).rejects.toThrow();
+      await expect(found).rejects.toThrow(NotFoundException);
+      await expect(found).rejects.toThrow(opts.findByPkNotFoundMessage);
+    });
+
+    it('should be throw exception', async () => {
+      const id = [undefined] as unknown as string;
+
+      await repository.create({ id });
+
+      const found = repository.findByPk(id, true);
+
+      await expect(found).rejects.toThrow();
+      await expect(found).rejects.toThrow(ConflictException);
+      await expect(found).rejects.toThrow(opts.findByPkMessage);
     });
   });
 });
