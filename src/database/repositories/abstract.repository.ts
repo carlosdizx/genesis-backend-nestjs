@@ -286,7 +286,7 @@ export default class AbstractRepository<
         order: order || options?.order,
       });
 
-      const total = Array.isArray(count) ? count.length : (count as number);
+      const total = count;
       const totalPages = Math.ceil(total / pageSize);
 
       const from = offset + 1;
