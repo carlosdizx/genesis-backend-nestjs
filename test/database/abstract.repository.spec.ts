@@ -6,6 +6,7 @@ import AbstractRepository from '../../src/database/repositories/abstract.reposit
 import TestRepository from './fixtures/test.repository';
 import { randomUUID } from 'node:crypto';
 
+const length = 10000;
 const logger = new Logger('Test logger');
 const opts: RepositoryOptionsInterface<TestEntityModel> = {
   logger,
@@ -38,7 +39,7 @@ describe('AbstractRepository', () => {
       models: [TestEntityModel],
     });
 
-    repository = new TestRepository(TestEntityModel);
+    repository = new TestRepository(TestEntityModel, opts);
     repository.unassignLoggerError();
 
     await sequelize.sync({ force: true });
@@ -108,6 +109,47 @@ describe('AbstractRepository', () => {
         await expect(duplicated).rejects.toThrow(ConflictException);
         await expect(duplicated).rejects.toThrow(opts.createMessage);
       });
+    });
+  });
+
+  describe('Insert Many Method', () => {
+    it('should be correct', async () => {
+      repository = new TestRepository(TestEntityModel, {
+        ...opts,
+        idGenerator: randomUUID,
+      });
+
+      const entities = [];
+      for (let i = 0; i < length; i++) {
+        entities.push({ name: `name-${i}` });
+      }
+
+      const entity = await repository.insertMany(entities);
+
+      expect(entity).toBeDefined();
+      expect(entity).toHaveLength(length);
+      expect(entity).toHaveProperty('length');
+
+      const entitiesFound = await repository.findAll();
+      expect(entitiesFound).toHaveLength(length);
+    });
+
+    it('Ids duplicates', async () => {
+      repository = new TestRepository(TestEntityModel, {
+        ...opts,
+        idGenerator: () => 'notUniqueId',
+      });
+
+      const entities = [];
+      for (let i = 0; i < length; i++) {
+        entities.push({ name: `name-${i}` });
+      }
+
+      const res = repository.insertMany(entities);
+
+      await expect(res).rejects.toThrow();
+      await expect(res).rejects.toThrow(ConflictException);
+      await expect(res).rejects.toThrow(opts.insertManyMessage);
     });
   });
 });
