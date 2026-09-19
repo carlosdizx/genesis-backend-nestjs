@@ -152,4 +152,36 @@ describe('AbstractRepository', () => {
       await expect(res).rejects.toThrow(opts.insertManyMessage);
     });
   });
+
+  describe('Find or Create Method', () => {
+    it('should be correct', async () => {
+      const id = 'id';
+
+      const [, first] = await repository.findOrCreate({
+        where: { id },
+        defaults: { id, name: randomUUID() },
+      });
+
+      const [, second] = await repository.findOrCreate({
+        where: { id },
+        defaults: { id, name: randomUUID() },
+      });
+
+      const [, third] = await repository.findOrCreate({
+        where: { id: id.concat(id) },
+      });
+
+      expect(first).toBeTruthy();
+      expect(second).toBeFalsy();
+      expect(third).toBeTruthy();
+    });
+
+    it('Wrong Data', async () => {
+      const res = repository.findOrCreate({});
+
+      await expect(res).rejects.toThrow();
+      await expect(res).rejects.toThrow(ConflictException);
+      await expect(res).rejects.toThrow(opts.findOrCreateMessage);
+    });
+  });
 });
