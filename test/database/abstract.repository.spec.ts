@@ -264,4 +264,28 @@ describe('AbstractRepository', () => {
       await expect(found).rejects.toThrow(opts.findOneMessage);
     });
   });
+
+  describe('find All Method', () => {
+    it('should be correct', async () => {
+      const entities = [];
+      for (let i = 0; i < length; i++) {
+        entities.push({ name: `name-${i}` });
+      }
+
+      await repository.insertMany(entities);
+
+      const list = await repository.findAll();
+
+      expect(list).toBeDefined();
+      expect(list).toHaveProperty('length');
+    });
+
+    it('should be exception', async () => {
+      const list = repository.findAll({ attribute: ['xxx'] });
+
+      await expect(list).rejects.toThrow();
+      await expect(list).rejects.toThrow(ConflictException);
+      await expect(list).rejects.toThrow(opts.findAllMessage);
+    });
+  });
 });
