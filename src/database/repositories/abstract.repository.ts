@@ -98,11 +98,8 @@ export default class AbstractRepository<
     this.logger.error = () => {};
   }
 
-  private toClean(entity: TModel): TModel | null {
-    if (!entity) return null;
-    return typeof entity.toJSON === 'function'
-      ? (entity.toJSON() as TModel)
-      : entity;
+  private toClean(entity: TModel): TModel {
+    return entity.toJSON() as TModel;
   }
 
   private toCleanArray(entities: TModel[]): TModel[] {
