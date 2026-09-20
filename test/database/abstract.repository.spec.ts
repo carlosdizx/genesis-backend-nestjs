@@ -463,4 +463,39 @@ describe('AbstractRepository', () => {
       await expect(promise).rejects.toThrow(opts.deleteByPkMessage);
     });
   });
+
+  describe('Restore by PK Method', () => {
+    it('should be correct', async () => {
+      const id = randomUUID();
+
+      await repository.create({ id });
+      await repository.deleteByPk(id);
+
+      const restored = await repository.restoreByPk(id);
+      const found = await repository.findByPk(id, true);
+
+      expect(restored).toBeDefined();
+      expect(restored!.id).toEqual(id);
+      expect(found).toBeDefined();
+      expect(found.id).toEqual(id);
+
+      const notFound = await repository.restoreByPk(id.concat('-id'));
+      expect(notFound).toBeNull();
+    });
+
+    it('should be exception', async () => {
+      const id = randomUUID();
+
+      await repository.create({ id });
+      await repository.deleteByPk(id);
+
+      const promise = repository.restoreByPk(id, {
+        transaction: true as unknown as any,
+      });
+
+      await expect(promise).rejects.toThrow();
+      await expect(promise).rejects.toThrow(ConflictException);
+      await expect(promise).rejects.toThrow(opts.restoreByPkMessage);
+    });
+  });
 });
