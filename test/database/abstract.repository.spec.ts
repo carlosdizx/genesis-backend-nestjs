@@ -331,4 +331,51 @@ describe('AbstractRepository', () => {
       await expect(list).rejects.toThrow(opts.findAllMessage);
     });
   });
+
+  describe('Update by PK Method', () => {
+    it('should be correct', async () => {
+      const id = randomUUID();
+      const name = 'Carlos';
+      const newName = 'Ernesto';
+
+      await repository.create({ id, name });
+
+      const entity = await repository.findByPk(id, true);
+
+      await repository.updateByPk(id, { name: newName });
+      let entityUpdated = await repository.findByPk(id, true);
+
+      expect(entity.id).toEqual(id);
+      expect(entityUpdated.id).toEqual(id);
+      expect(entityUpdated.name).toEqual(newName);
+      expect(entity.name).not.toEqual(newName);
+
+      await repository.updateByPk(id, { name });
+      entityUpdated = await repository.findByPk(id, true);
+
+      expect(entity.id).toEqual(entityUpdated.id);
+      expect(entity.name).toEqual(name);
+      expect(entityUpdated.name).toEqual(name);
+
+      await repository.updateByPk(id.concat('-id'), { name: newName });
+      entityUpdated = await repository.findByPk(id, true);
+      expect(entityUpdated.name).toEqual(name);
+    });
+
+    it('should be exception', async () => {
+      const id = randomUUID();
+      const name = 'Carlos';
+      await repository.create({ id, name });
+
+      const promise = repository.updateByPk(
+        id,
+        { name: id.concat('-').concat(name) },
+        { fields: true as unknown as string[] },
+      );
+
+      await expect(promise).rejects.toThrow();
+      await expect(promise).rejects.toThrow(ConflictException);
+      await expect(promise).rejects.toThrow(opts.updateByQueryMessage);
+    });
+  });
 });
