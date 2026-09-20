@@ -378,4 +378,59 @@ describe('AbstractRepository', () => {
       await expect(promise).rejects.toThrow(opts.updateByQueryMessage);
     });
   });
+
+  describe('Update by Query Method', () => {
+    it('should be correct', async () => {
+      const id = randomUUID();
+      const name = 'Carlos';
+      const newName = 'Ernesto';
+
+      await repository.create({ id, name });
+
+      const entityUpdated = await repository.updateByQuery(
+        { id },
+        { name: newName },
+      );
+
+      expect(entityUpdated).toBeDefined();
+      expect(entityUpdated!.id).toEqual(id);
+      expect(entityUpdated!.name).toEqual(newName);
+
+      const found = await repository.findByPk(id, true);
+      expect(found.name).toEqual(newName);
+    });
+
+    it('should be not found', async () => {
+      const id = randomUUID();
+      const name = 'Carlos';
+
+      await repository.create({ id, name });
+
+      const promise = repository.updateByQuery(
+        { id: id.concat('-id') },
+        { name: 'Ernesto' },
+      );
+
+      await expect(promise).rejects.toThrow();
+      await expect(promise).rejects.toThrow(NotFoundException);
+      await expect(promise).rejects.toThrow(opts.findOneNotFoundMessage);
+    });
+
+    it('should be exception', async () => {
+      const id = randomUUID();
+      const name = 'Carlos';
+
+      await repository.create({ id, name });
+
+      const promise = repository.updateByQuery(
+        { id },
+        { name: id.concat('-').concat(name) },
+        { fields: true as unknown as string[] },
+      );
+
+      await expect(promise).rejects.toThrow();
+      await expect(promise).rejects.toThrow(ConflictException);
+      await expect(promise).rejects.toThrow(opts.updateByQueryMessage);
+    });
+  });
 });
