@@ -50,7 +50,7 @@ export default class CrudService<
     primaryKey: string | number,
     validate: boolean,
     options?: Omit<FindOptions<Attributes<TModel>>, 'where'>,
-  ): Promise<TModel> {
+  ): Promise<TModel | null> {
     return this.repository.findByPk(primaryKey, validate, options);
   }
 
@@ -58,7 +58,7 @@ export default class CrudService<
     query: WhereOptions<Attributes<TModel>>,
     validate: boolean,
     options?: Omit<FindOptions<Attributes<TModel>>, 'where'>,
-  ): Promise<TModel> {
+  ): Promise<TModel | null> {
     return this.repository.findOne(query, validate, options);
   }
 

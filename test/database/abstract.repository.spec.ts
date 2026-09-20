@@ -194,7 +194,7 @@ describe('AbstractRepository', () => {
 
       await repository.create({ id, name });
 
-      const found = await repository.findByPk(id, false);
+      const found = (await repository.findByPk(id, false)) as TestEntityModel;
 
       expect(found).toBeDefined();
       expect(found).toHaveProperty('id');
@@ -234,7 +234,10 @@ describe('AbstractRepository', () => {
 
       await repository.create({ id: randomUUID(), name });
 
-      const found = await repository.findOne({ name }, false);
+      const found = (await repository.findOne(
+        { name },
+        false,
+      )) as TestEntityModel;
 
       expect(found).toBeDefined();
       expect(found).toHaveProperty('id');
@@ -340,10 +343,13 @@ describe('AbstractRepository', () => {
 
       await repository.create({ id, name });
 
-      const entity = await repository.findByPk(id, true);
+      const entity = (await repository.findByPk(id, true)) as TestEntityModel;
 
       await repository.updateByPk(id, { name: newName });
-      let entityUpdated = await repository.findByPk(id, true);
+      let entityUpdated = (await repository.findByPk(
+        id,
+        true,
+      )) as TestEntityModel;
 
       expect(entity.id).toEqual(id);
       expect(entityUpdated.id).toEqual(id);
@@ -351,14 +357,14 @@ describe('AbstractRepository', () => {
       expect(entity.name).not.toEqual(newName);
 
       await repository.updateByPk(id, { name });
-      entityUpdated = await repository.findByPk(id, true);
+      entityUpdated = (await repository.findByPk(id, true)) as TestEntityModel;
 
       expect(entity.id).toEqual(entityUpdated.id);
       expect(entity.name).toEqual(name);
       expect(entityUpdated.name).toEqual(name);
 
       await repository.updateByPk(id.concat('-id'), { name: newName });
-      entityUpdated = await repository.findByPk(id, true);
+      entityUpdated = (await repository.findByPk(id, true)) as TestEntityModel;
       expect(entityUpdated.name).toEqual(name);
     });
 
@@ -396,7 +402,7 @@ describe('AbstractRepository', () => {
       expect(entityUpdated!.id).toEqual(id);
       expect(entityUpdated!.name).toEqual(newName);
 
-      const found = await repository.findByPk(id, true);
+      const found = (await repository.findByPk(id, true)) as TestEntityModel;
       expect(found.name).toEqual(newName);
     });
 
@@ -440,7 +446,7 @@ describe('AbstractRepository', () => {
 
       await repository.create({ id });
 
-      let entity = await repository.findByPk(id, true);
+      let entity = (await repository.findByPk(id, true)) as TestEntityModel;
 
       expect(entity).toBeDefined();
       expect(entity.id).toEqual(id);
@@ -472,7 +478,7 @@ describe('AbstractRepository', () => {
       await repository.deleteByPk(id);
 
       const restored = await repository.restoreByPk(id);
-      const found = await repository.findByPk(id, true);
+      const found = (await repository.findByPk(id, true)) as TestEntityModel;
 
       expect(restored).toBeDefined();
       expect(restored!.id).toEqual(id);
@@ -510,7 +516,7 @@ describe('AbstractRepository', () => {
       expect(result).toBeDefined();
       expect(result.id).toEqual(id);
 
-      const found = await repository.findByPk(id, true);
+      const found = (await repository.findByPk(id, true)) as TestEntityModel;
       expect(found.id).toEqual(id);
     });
 
@@ -613,9 +619,9 @@ describe('AbstractRepository', () => {
         await repository.create({ id });
         await repository.deleteByPk(id);
 
-        const found = await repository.findByPk(id, true, {
+        const found = (await repository.findByPk(id, true, {
           paranoid: false,
-        });
+        })) as TestEntityModel;
 
         expect(found).toBeDefined();
         expect(found.id).toEqual(id);
@@ -693,7 +699,7 @@ describe('AbstractRepository', () => {
         const all = await repository.findAll();
         expect(all).toHaveLength(2);
 
-        const found = await repository.findByPk(idA, true);
+        const found = (await repository.findByPk(idA, true)) as TestEntityModel;
         expect(found.name).toEqual('a-updated');
       });
     });
@@ -756,7 +762,7 @@ describe('AbstractRepository', () => {
 
         await repository.create({ id, name: maliciousName });
 
-        const found = await repository.findByPk(id, true);
+        const found = (await repository.findByPk(id, true)) as TestEntityModel;
         expect(found.name).toEqual(maliciousName);
 
         const all = await repository.findAll();
@@ -769,7 +775,7 @@ describe('AbstractRepository', () => {
 
         await repository.create({ id, name: longName });
 
-        const found = await repository.findByPk(id, true);
+        const found = (await repository.findByPk(id, true)) as TestEntityModel;
         expect(found.name).toHaveLength(100000);
         expect(found.name).toEqual(longName);
       });
@@ -780,7 +786,7 @@ describe('AbstractRepository', () => {
 
         await repository.create({ id, name: unicodeName });
 
-        const found = await repository.findByPk(id, true);
+        const found = (await repository.findByPk(id, true)) as TestEntityModel;
         expect(found.name).toEqual(unicodeName);
       });
     });
@@ -811,7 +817,7 @@ describe('AbstractRepository', () => {
           repository.updateByPk(id, { name: 'B' }),
         ]);
 
-        const found = await repository.findByPk(id, true);
+        const found = (await repository.findByPk(id, true)) as TestEntityModel;
         expect(['A', 'B']).toContain(found.name);
       });
 
@@ -832,21 +838,17 @@ describe('AbstractRepository', () => {
       });
     });
 
-    describe('Known Issue: findByPk/findOne with validate=false throw an unhandled TypeError when nothing is found', () => {
-      it('findByPk(id, false) on a missing row throws a raw TypeError instead of a handled exception', async () => {
-        const found = repository.findByPk(randomUUID(), false);
+    describe('findByPk/findOne with validate=false on a missing row', () => {
+      it('findByPk(id, false) returns null instead of throwing', async () => {
+        const found = await repository.findByPk(randomUUID(), false);
 
-        await expect(found).rejects.toThrow(TypeError);
-        await expect(found).rejects.not.toThrow(ConflictException);
-        await expect(found).rejects.not.toThrow(NotFoundException);
+        expect(found).toBeNull();
       });
 
-      it('findOne(query, false) on a missing row throws a raw TypeError instead of a handled exception', async () => {
-        const found = repository.findOne({ name: randomUUID() }, false);
+      it('findOne(query, false) returns null instead of throwing', async () => {
+        const found = await repository.findOne({ name: randomUUID() }, false);
 
-        await expect(found).rejects.toThrow(TypeError);
-        await expect(found).rejects.not.toThrow(ConflictException);
-        await expect(found).rejects.not.toThrow(NotFoundException);
+        expect(found).toBeNull();
       });
     });
   });

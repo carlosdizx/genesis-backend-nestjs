@@ -175,7 +175,7 @@ export default class AbstractRepository<
     primaryKey: string,
     validate: boolean,
     options?: Omit<FindOptions<Attributes<TModel>>, 'where'>,
-  ): Promise<TModel> {
+  ): Promise<TModel | null> {
     let entity: TModel;
 
     try {
@@ -186,16 +186,19 @@ export default class AbstractRepository<
       throw new ConflictException(this.findByPkMessage);
     }
 
-    if (validate && !entity)
-      throw new NotFoundException(this.findByPkNotFoundMessage);
-    return this.toClean(entity)!;
+    if (!entity) {
+      if (validate) throw new NotFoundException(this.findByPkNotFoundMessage);
+      return null;
+    }
+
+    return this.toClean(entity);
   }
 
   public async findOne(
     query: WhereOptions<Attributes<TModel>>,
     validate: boolean,
     options?: Omit<FindOptions<Attributes<TModel>>, 'where'>,
-  ): Promise<TModel> {
+  ): Promise<TModel | null> {
     let entity: TModel;
 
     try {
@@ -209,9 +212,12 @@ export default class AbstractRepository<
       throw new ConflictException(this.findOneMessage);
     }
 
-    if (validate && !entity)
-      throw new NotFoundException(this.findOneNotFoundMessage);
-    return this.toClean(entity)!;
+    if (!entity) {
+      if (validate) throw new NotFoundException(this.findOneNotFoundMessage);
+      return null;
+    }
+
+    return this.toClean(entity);
   }
 
   public async findAll(

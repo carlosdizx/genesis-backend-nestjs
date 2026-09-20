@@ -38,13 +38,13 @@ export interface RepositoryInterface<TModel extends Model> {
     primaryKey: string | number,
     validate: boolean,
     options?: Omit<FindOptions<Attributes<TModel>>, 'where'>,
-  ): Promise<TModel>;
+  ): Promise<TModel | null>;
 
   findOne(
     query: WhereOptions<Attributes<TModel>>,
     validate: boolean,
     options?: Omit<FindOptions<Attributes<TModel>>, 'where'>,
-  ): Promise<TModel>;
+  ): Promise<TModel | null>;
 
   findAll(
     query?: WhereOptions<Attributes<TModel>>,
