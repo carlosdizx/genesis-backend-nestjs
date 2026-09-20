@@ -498,4 +498,30 @@ describe('AbstractRepository', () => {
       await expect(promise).rejects.toThrow(opts.restoreByPkMessage);
     });
   });
+
+  describe('Transaction Method', () => {
+    it('should be correct', async () => {
+      const id = randomUUID();
+
+      const result = await repository.transaction(async (transaction) => {
+        return repository.create({ id }, { transaction });
+      });
+
+      expect(result).toBeDefined();
+      expect(result.id).toEqual(id);
+
+      const found = await repository.findByPk(id, true);
+      expect(found.id).toEqual(id);
+    });
+
+    it('should be exception', async () => {
+      const promise = repository.transaction(async () => {
+        throw new Error('Error dentro de la transacción');
+      });
+
+      await expect(promise).rejects.toThrow();
+      await expect(promise).rejects.toThrow(ConflictException);
+      await expect(promise).rejects.toThrow(opts.transactionMessage);
+    });
+  });
 });
