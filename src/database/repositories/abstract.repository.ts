@@ -319,9 +319,7 @@ export default class AbstractRepository<
     try {
       const entity = await this.model.findByPk(primaryKey);
 
-      if (!entity) {
-        return null;
-      }
+      if (!entity) return null;
 
       entity.set(dto);
       await entity.save(options);
