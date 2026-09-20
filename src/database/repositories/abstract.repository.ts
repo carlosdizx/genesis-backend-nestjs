@@ -383,9 +383,7 @@ export default class AbstractRepository<
         paranoid: false,
       });
 
-      if (!entity) {
-        return null;
-      }
+      if (!entity) return null;
 
       await entity.restore(options);
 
