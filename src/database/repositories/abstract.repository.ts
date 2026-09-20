@@ -362,9 +362,7 @@ export default class AbstractRepository<
         paranoid: !options?.force,
       });
 
-      if (!entity) {
-        return null;
-      }
+      if (!entity) return null;
 
       await entity.destroy(options);
 
