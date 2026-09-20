@@ -1,6 +1,6 @@
 import { SequelizeOptions } from 'sequelize-typescript';
-import DatabaseEnvInterface from '../interfaces/database-env.interface';
-import models from '../models';
+import DatabaseEnvInterface from '@database/interfaces/database-env.interface';
+import models from '@database/models';
 
 const databaseOptionsUtil = (env: DatabaseEnvInterface): SequelizeOptions => {
   return {

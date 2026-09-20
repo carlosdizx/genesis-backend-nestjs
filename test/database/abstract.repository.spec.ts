@@ -1,12 +1,12 @@
 import { Sequelize } from 'sequelize-typescript';
 import TestEntityModel from './fixtures/test-entity.model';
-import RepositoryOptionsInterface from '../../src/database/interfaces/repository-options.interface';
 import { ConflictException, Logger, NotFoundException } from '@nestjs/common';
-import AbstractRepository from '../../src/database/repositories/abstract.repository';
 import TestRepository from './fixtures/test.repository';
 import { randomUUID } from 'node:crypto';
-import PaginationDto from '../../src/common/dto/pagination.dto';
-import DataRangeEnum from '../../src/common/enums/data-range.enum';
+import RepositoryOptionsInterface from '@database/interfaces/repository-options.interface';
+import AbstractRepository from '@database/repositories/abstract.repository';
+import PaginationDto from '@common/dto/pagination.dto';
+import DataRangeEnum from '@common/enums/data-range.enum';
 
 const length = 10000;
 const logger = new Logger('Test logger');

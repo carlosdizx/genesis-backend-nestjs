@@ -10,7 +10,7 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import DataRangeEnum from '../enums/data-range.enum';
+import DataRangeEnum from '@common/enums/data-range.enum';
 
 export default class PaginationDto {
   @IsInt()

@@ -1,7 +1,7 @@
 import { ModelCtor } from 'sequelize-typescript';
-import AbstractRepository from '../../../src/database/repositories/abstract.repository';
-import RepositoryOptionsInterface from '../../../src/database/interfaces/repository-options.interface';
 import TestEntityModel from './test-entity.model';
+import AbstractRepository from '@database/repositories/abstract.repository';
+import RepositoryOptionsInterface from '@database/interfaces/repository-options.interface';
 
 export default class TestRepository extends AbstractRepository<TestEntityModel> {
   constructor(

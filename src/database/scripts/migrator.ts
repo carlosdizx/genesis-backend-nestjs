@@ -1,7 +1,7 @@
 import { join } from 'path';
 import { SequelizeStorage, Umzug } from 'umzug';
-import createCliSequelize from '../config/cli-sequelize.config';
-import runUmzugCommand from '../config/run-umzug-command';
+import createCliSequelize from '@database/config/cli-sequelize.config';
+import runUmzugCommand from '@database/config/run-umzug-command';
 
 async function main() {
   const sequelize = createCliSequelize();

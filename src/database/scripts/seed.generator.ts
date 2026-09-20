@@ -1,7 +1,7 @@
 import { join } from 'path';
-import createTimestampedFile from '../config/create-timestamped-file';
-import migrationTemplate from '../config/migration-template';
-import idUtil from '../../common/utils/id.util';
+import idUtil from '@common/utils/id.util';
+import createTimestampedFile from '@database/config/create-timestamped-file';
+import migrationTemplate from '@database/config/migration-template';
 
 let name = process.argv[2];
 

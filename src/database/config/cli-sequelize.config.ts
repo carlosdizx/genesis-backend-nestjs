@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 import { Sequelize } from 'sequelize-typescript';
-import databaseSchema from '../../common/schemas/database.schema';
-import databaseOptionsUtil from '../util/database-options.util';
+import databaseSchema from '@common/schemas/database.schema';
+import databaseOptionsUtil from '@database/util/database-options.util';
 
 dotenv.config();
 

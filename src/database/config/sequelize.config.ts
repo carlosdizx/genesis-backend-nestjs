@@ -1,7 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { SequelizeModuleOptions } from '@nestjs/sequelize';
-import Env from '../../common/schemas/env.schema';
-import databaseOptionsUtil from '../util/database-options.util';
+import Env from '@common/schemas/env.schema';
+import databaseOptionsUtil from '@database/util/database-options.util';
 
 const sequelizeConfigFactory = (
   configService: ConfigService<Env, true>,

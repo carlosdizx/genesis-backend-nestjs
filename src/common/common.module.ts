@@ -1,7 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import validateEnv from './config/env.config';
-import DatabaseModule from '../database/database.module';
+import validateEnv from '@common/config/env.config';
+import DatabaseModule from '@database/database.module';
 
 @Global()
 @Module({

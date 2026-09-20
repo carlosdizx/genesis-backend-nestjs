@@ -1,4 +1,4 @@
-import Env, { envSchema } from '../schemas/env.schema';
+import Env, { envSchema } from '@common/schemas/env.schema';
 
 const validateEnv = (config: Record<string, unknown>): Env => {
   const result = envSchema.safeParse(config);

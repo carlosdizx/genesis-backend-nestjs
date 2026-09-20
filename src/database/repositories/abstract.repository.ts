@@ -15,11 +15,11 @@ import {
   Op,
 } from 'sequelize';
 import { Model, ModelCtor } from 'sequelize-typescript';
-import PaginatedResponseInterface from '../interfaces/paginated-response.interface';
-import RepositoryOptionsInterface from '../interfaces/repository-options.interface';
-import { RepositoryInterface } from '../interfaces/repository.interface';
-import PaginationDto from '../../common/dto/pagination.dto';
-import { setRangeUtil } from '../../common/utils/set-range.util';
+import { setRangeUtil } from '@common/utils/set-range.util';
+import { RepositoryInterface } from '@database/interfaces/repository.interface';
+import PaginationDto from '@common/dto/pagination.dto';
+import PaginatedResponseInterface from '@database/interfaces/paginated-response.interface';
+import RepositoryOptionsInterface from '@database/interfaces/repository-options.interface';
 
 export default class AbstractRepository<
   TModel extends Model,
