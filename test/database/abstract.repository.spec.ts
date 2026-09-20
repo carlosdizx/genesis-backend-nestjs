@@ -524,4 +524,330 @@ describe('AbstractRepository', () => {
       await expect(promise).rejects.toThrow(opts.transactionMessage);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Real test
+  // ---------------------------------------------------------------------------
+
+  describe('Real World Edge Cases', () => {
+    describe('Soft Delete Visibility (paranoid)', () => {
+      it('findAll should not return soft-deleted rows by default', async () => {
+        const idA = randomUUID();
+        const idB = randomUUID();
+
+        await repository.create({ id: idA });
+        await repository.create({ id: idB });
+        await repository.deleteByPk(idA);
+
+        const list = await repository.findAll();
+
+        expect(list).toHaveLength(1);
+        expect(list[0].id).toEqual(idB);
+      });
+
+      it('findAllPaginated total should exclude soft-deleted rows', async () => {
+        const idA = randomUUID();
+        const idB = randomUUID();
+
+        await repository.create({ id: idA });
+        await repository.create({ id: idB });
+        await repository.deleteByPk(idA);
+
+        const dto = new PaginationDto();
+        dto.page = 1;
+        dto.pageSize = 10;
+
+        const list = await repository.findAllPaginated(dto);
+
+        expect(list.meta.total).toEqual(1);
+        expect(list.data).toHaveLength(1);
+        expect(list.data[0].id).toEqual(idB);
+      });
+
+      it('findOne(query, true) should not find a soft-deleted row and throws NotFoundException', async () => {
+        const id = randomUUID();
+        const name = 'soft-deleted-name';
+
+        await repository.create({ id, name });
+        await repository.deleteByPk(id);
+
+        const found = repository.findOne({ name }, true);
+
+        await expect(found).rejects.toThrow(NotFoundException);
+        await expect(found).rejects.toThrow(opts.findOneNotFoundMessage);
+      });
+
+      it('updateByPk on a soft-deleted row should be a no-op (returns null, data unchanged)', async () => {
+        const id = randomUUID();
+        const name = 'original';
+
+        await repository.create({ id, name });
+        await repository.deleteByPk(id);
+
+        const result = await repository.updateByPk(id, { name: 'changed' });
+        expect(result).toBeNull();
+
+        const restored = await repository.restoreByPk(id);
+        expect(restored!.name).toEqual(name);
+      });
+
+      it('updateByQuery on a soft-deleted row should throw NotFoundException, not update it', async () => {
+        const id = randomUUID();
+        const name = 'original';
+
+        await repository.create({ id, name });
+        await repository.deleteByPk(id);
+
+        const promise = repository.updateByQuery({ id }, { name: 'changed' });
+
+        await expect(promise).rejects.toThrow(NotFoundException);
+        await expect(promise).rejects.toThrow(opts.findOneNotFoundMessage);
+
+        const restored = await repository.restoreByPk(id);
+        expect(restored!.name).toEqual(name);
+      });
+
+      it('paranoid: false should still find a soft-deleted row', async () => {
+        const id = randomUUID();
+
+        await repository.create({ id });
+        await repository.deleteByPk(id);
+
+        const found = await repository.findByPk(id, true, {
+          paranoid: false,
+        });
+
+        expect(found).toBeDefined();
+        expect(found.id).toEqual(id);
+        expect(found.deletedAt).not.toBeNull();
+      });
+    });
+
+    describe('Hard Delete (force) is unrecoverable', () => {
+      it('force delete should make the row permanently disappear, even with paranoid: false', async () => {
+        const id = randomUUID();
+
+        await repository.create({ id });
+        await repository.deleteByPk(id, { force: true });
+
+        const found = repository.findByPk(id, true, { paranoid: false });
+        await expect(found).rejects.toThrow(NotFoundException);
+
+        const restored = await repository.restoreByPk(id);
+        expect(restored).toBeNull();
+      });
+    });
+
+    describe('updateByQuery ambiguity with multiple matches', () => {
+      it('should only update the first matching row, leaving the rest untouched', async () => {
+        const sharedName = 'duplicate-name';
+
+        await repository.create({ id: randomUUID(), name: sharedName });
+        await repository.create({ id: randomUUID(), name: sharedName });
+        await repository.create({ id: randomUUID(), name: sharedName });
+
+        await repository.updateByQuery(
+          { name: sharedName },
+          { name: 'updated-name' },
+        );
+
+        const stillOld = await repository.findAll({ name: sharedName });
+        const updated = await repository.findAll({ name: 'updated-name' });
+
+        expect(stillOld).toHaveLength(2);
+        expect(updated).toHaveLength(1);
+      });
+    });
+
+    describe('Transaction Atomicity', () => {
+      it('should roll back every operation performed inside a failed transaction', async () => {
+        const idA = randomUUID();
+        const idB = randomUUID();
+
+        const promise = repository.transaction(async (transaction) => {
+          await repository.create({ id: idA }, { transaction });
+          await repository.create({ id: idB }, { transaction });
+          throw new Error('simulated failure mid-transaction');
+        });
+
+        await expect(promise).rejects.toThrow(ConflictException);
+
+        const all = await repository.findAll();
+        expect(all).toHaveLength(0);
+      });
+
+      it('should commit every operation when the transaction succeeds', async () => {
+        const idA = randomUUID();
+        const idB = randomUUID();
+
+        await repository.transaction(async (transaction) => {
+          await repository.create({ id: idA, name: 'a' }, { transaction });
+          await repository.updateByPk(
+            idA,
+            { name: 'a-updated' },
+            { transaction },
+          );
+          await repository.create({ id: idB, name: 'b' }, { transaction });
+        });
+
+        const all = await repository.findAll();
+        expect(all).toHaveLength(2);
+
+        const found = await repository.findByPk(idA, true);
+        expect(found.name).toEqual('a-updated');
+      });
+    });
+
+    describe('Pagination Edge Cases', () => {
+      const total = 5;
+
+      beforeEach(async () => {
+        const entities = [];
+        for (let i = 0; i < total; i++) {
+          entities.push({ name: `name-${i}` });
+        }
+        await repository.insertMany(entities);
+      });
+
+      it('a page beyond the last one returns empty data with consistent meta', async () => {
+        const dto = new PaginationDto();
+        dto.page = 999;
+        dto.pageSize = 10;
+
+        const list = await repository.findAllPaginated(dto);
+
+        expect(list.data).toHaveLength(0);
+        expect(list.meta.total).toEqual(total);
+        expect(list.meta.hasNext).toBe(false);
+        expect(list.meta.hasPrev).toBe(true);
+        expect(list.meta.nextPage).toBeNull();
+        expect(list.meta.prevPage).toEqual(998);
+      });
+
+      it('pageSize 0 yields no rows and a non-finite totalPages (known quirk)', async () => {
+        const dto = new PaginationDto();
+        dto.page = 1;
+        dto.pageSize = 0;
+
+        const list = await repository.findAllPaginated(dto);
+
+        expect(list.data).toHaveLength(0);
+        expect(list.meta.total).toEqual(total);
+        expect(list.meta.totalPages).toBe(Infinity);
+      });
+
+      it('a negative page produces a negative offset that sqlite ignores, returning all rows (known quirk)', async () => {
+        const dto = new PaginationDto();
+        dto.page = -1;
+        dto.pageSize = 10;
+
+        const list = await repository.findAllPaginated(dto);
+
+        expect(list.data).toHaveLength(total);
+        expect(list.meta.from).toEqual(-19);
+        expect(list.meta.to).toEqual(-10);
+      });
+    });
+
+    describe('Malicious & Extreme Input', () => {
+      it('should safely store and retrieve a SQL-injection-like string without affecting the table', async () => {
+        const id = randomUUID();
+        const maliciousName = "Robert'); DROP TABLE test_entities;--";
+
+        await repository.create({ id, name: maliciousName });
+
+        const found = await repository.findByPk(id, true);
+        expect(found.name).toEqual(maliciousName);
+
+        const all = await repository.findAll();
+        expect(all).toHaveLength(1);
+      });
+
+      it('should round-trip a very long string', async () => {
+        const id = randomUUID();
+        const longName = 'x'.repeat(100000);
+
+        await repository.create({ id, name: longName });
+
+        const found = await repository.findByPk(id, true);
+        expect(found.name).toHaveLength(100000);
+        expect(found.name).toEqual(longName);
+      });
+
+      it('should round-trip unicode and emoji characters', async () => {
+        const id = randomUUID();
+        const unicodeName = '日本語 🎉 Ñoño café';
+
+        await repository.create({ id, name: unicodeName });
+
+        const found = await repository.findByPk(id, true);
+        expect(found.name).toEqual(unicodeName);
+      });
+    });
+
+    describe('Concurrency & Race Conditions', () => {
+      it('parallel creates with a real id generator should never collide', async () => {
+        repository = new TestRepository(TestEntityModel, {
+          ...opts,
+          idGenerator: randomUUID,
+        });
+
+        const creations = Array.from({ length: 100 }, (_, i) =>
+          repository.create({ name: `parallel-${i}` }),
+        );
+
+        const results = await Promise.all(creations);
+        const ids = new Set(results.map((entity) => entity.id));
+
+        expect(ids.size).toEqual(100);
+      });
+
+      it('two concurrent updateByPk calls on the same row should not corrupt data', async () => {
+        const id = randomUUID();
+        await repository.create({ id, name: 'start' });
+
+        await Promise.all([
+          repository.updateByPk(id, { name: 'A' }),
+          repository.updateByPk(id, { name: 'B' }),
+        ]);
+
+        const found = await repository.findByPk(id, true);
+        expect(['A', 'B']).toContain(found.name);
+      });
+
+      it('back-to-back transactions should each commit independently', async () => {
+        // sqlite in-memory forces a single connection, so true parallel
+        // transactions aren't representative here; run sequentially and
+        // still verify each one commits its own work correctly.
+        const ids = Array.from({ length: 10 }, () => randomUUID());
+
+        for (const id of ids) {
+          await repository.transaction((transaction) =>
+            repository.create({ id }, { transaction }),
+          );
+        }
+
+        const all = await repository.findAll();
+        expect(all).toHaveLength(10);
+      });
+    });
+
+    describe('Known Issue: findByPk/findOne with validate=false throw an unhandled TypeError when nothing is found', () => {
+      it('findByPk(id, false) on a missing row throws a raw TypeError instead of a handled exception', async () => {
+        const found = repository.findByPk(randomUUID(), false);
+
+        await expect(found).rejects.toThrow(TypeError);
+        await expect(found).rejects.not.toThrow(ConflictException);
+        await expect(found).rejects.not.toThrow(NotFoundException);
+      });
+
+      it('findOne(query, false) on a missing row throws a raw TypeError instead of a handled exception', async () => {
+        const found = repository.findOne({ name: randomUUID() }, false);
+
+        await expect(found).rejects.toThrow(TypeError);
+        await expect(found).rejects.not.toThrow(ConflictException);
+        await expect(found).rejects.not.toThrow(NotFoundException);
+      });
+    });
+  });
 });
