@@ -433,4 +433,34 @@ describe('AbstractRepository', () => {
       await expect(promise).rejects.toThrow(opts.updateByQueryMessage);
     });
   });
+
+  describe('Delete by PK Method', () => {
+    it('should be correct', async () => {
+      const id = randomUUID();
+
+      await repository.create({ id });
+
+      let entity = await repository.findByPk(id, true);
+
+      expect(entity).toBeDefined();
+      expect(entity.id).toEqual(id);
+
+      await repository.deleteByPk(id);
+      await repository.deleteByPk(id);
+    });
+
+    it('should be exception', async () => {
+      const id = randomUUID();
+
+      await repository.create({ id });
+
+      const promise = repository.deleteByPk(id, {
+        transaction: true as unknown as any,
+      });
+
+      await expect(promise).rejects.toThrow();
+      await expect(promise).rejects.toThrow(ConflictException);
+      await expect(promise).rejects.toThrow(opts.deleteByPkMessage);
+    });
+  });
 });
