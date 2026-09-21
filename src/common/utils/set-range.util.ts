@@ -1,5 +1,5 @@
-import DataRangeEnum from '../enums/data-range.enum';
 import { ConflictException } from '@nestjs/common';
+import DataRangeEnum from '@common/enums/data-range.enum';
 
 interface DateRangeResult {
   dateFirst: Date;
@@ -11,6 +11,7 @@ type SetRangeUtilResult = DateRangeResult;
 const calculateDateRange = (range: DataRangeEnum): DateRangeResult => {
   const today = new Date();
   let dateEnd = new Date(today);
+  today.setHours(0, 0, 0, 0);
   dateEnd.setHours(23, 59, 59, 999);
 
   let dateFirst: Date;
