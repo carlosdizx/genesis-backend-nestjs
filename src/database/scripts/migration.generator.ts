@@ -5,7 +5,7 @@ import migrationTemplate from '@database/config/migration-template';
 
 let name = process.argv[2];
 
-if (!name) name = idUtil('mig', 10);
+if (!name) name = idUtil('mig', 10, false);
 
 const filePath = createTimestampedFile(
   join(__dirname, '../migrations'),
