@@ -157,9 +157,9 @@ describe('CrudService', () => {
       };
       repository.findAllPaginated.mockResolvedValue(response);
 
-      await expect(
-        service.findAllPaginated(dto, query, options),
-      ).resolves.toBe(response);
+      await expect(service.findAllPaginated(dto, query, options)).resolves.toBe(
+        response,
+      );
       expect(repository.findAllPaginated).toHaveBeenCalledWith(
         dto,
         query,
@@ -223,8 +223,7 @@ describe('CrudService', () => {
     it('delegates the callback to the repository and returns its result', async () => {
       const callback = jest.fn().mockResolvedValue('done');
       repository.transaction.mockImplementation(
-        (fn: (t: Transaction) => Promise<unknown>) =>
-          fn({} as Transaction),
+        (fn: (t: Transaction) => Promise<unknown>) => fn({} as Transaction),
       );
 
       await expect(service.transaction(callback)).resolves.toBe('done');
