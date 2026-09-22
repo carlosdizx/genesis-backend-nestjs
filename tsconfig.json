@@ -20,10 +20,10 @@
     "strict": true,
     "strictPropertyInitialization": false,
     "paths": {
-      "@common": ["src/common"],
-      "@common/*": ["src/common/*"],
-      "@database": ["src/database"],
-      "@database/*": ["src/database/*"]
+      "@common": ["./src/common"],
+      "@common/*": ["./src/common/*"],
+      "@database": ["./src/database"],
+      "@database/*": ["./src/database/*"]
     }
   }
 }
