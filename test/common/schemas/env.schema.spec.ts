@@ -11,6 +11,10 @@ const validEnv = {
   OBSERVE_APP_KEY: 'key',
   OBSERVE_APP_SECRET: 'secret',
   OBSERVE_SERVICE_ID: 'service',
+  SMTP_HOST: 'smtp.gmail.com',
+  SMTP_PORT: '465',
+  SMTP_USER: 'user@gmail.com',
+  SMTP_PASSWORD: 'password',
 };
 
 describe('envSchema', () => {
@@ -21,6 +25,8 @@ describe('envSchema', () => {
       LOG_LEVELS: ['log', 'error'],
       DB_PORT: 5432,
       DB_LOGGING: false,
+      SMTP_PORT: 465,
+      SMTP_SECURE: true,
     });
   });
 
@@ -81,6 +87,9 @@ describe('envSchema', () => {
       'OBSERVE_APP_KEY',
       'OBSERVE_APP_SECRET',
       'OBSERVE_SERVICE_ID',
+      'SMTP_HOST',
+      'SMTP_USER',
+      'SMTP_PASSWORD',
     ])('rejects a missing %s', (key) => {
       const env: Record<string, string> = { ...validEnv };
       delete env[key];
@@ -97,6 +106,17 @@ describe('envSchema', () => {
 
       expect(parsed.DB_PORT).toBe(3306);
       expect(parsed.DB_LOGGING).toBe(true);
+    });
+
+    it('applies the smtp transforms', () => {
+      const parsed = envSchema.parse({
+        ...validEnv,
+        SMTP_PORT: '587',
+        SMTP_SECURE: 'false',
+      });
+
+      expect(parsed.SMTP_PORT).toBe(587);
+      expect(parsed.SMTP_SECURE).toBe(false);
     });
   });
 });
