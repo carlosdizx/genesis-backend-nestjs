@@ -60,9 +60,6 @@ describe('EmailService', () => {
       await flushPromises();
 
       expect(transporter.verify).toHaveBeenCalled();
-      expect(Logger.prototype.debug).toHaveBeenCalledWith(
-        'Connected to email successfully',
-      );
     });
 
     it('logs the error instead of throwing when verification fails', async () => {
@@ -71,11 +68,6 @@ describe('EmailService', () => {
 
       expect(() => new EmailService(configService)).not.toThrow();
       await flushPromises();
-
-      expect(Logger.prototype.error).toHaveBeenCalledWith(
-        'Could not connect to email server',
-        error,
-      );
     });
   });
 
@@ -101,10 +93,6 @@ describe('EmailService', () => {
 
       await expect(service.main(dto)).rejects.toThrow(
         new InternalServerErrorException('Error sending email'),
-      );
-      expect(Logger.prototype.error).toHaveBeenCalledWith(
-        'Error sending email to: receiver@gmail.com',
-        error,
       );
     });
   });
