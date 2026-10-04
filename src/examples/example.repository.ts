@@ -1,5 +1,5 @@
 import AbstractRepository from '../database/repositories/abstract.repository';
-import { ExampleModel } from '../database/models/example.model';
+import ExampleModel from '../database/models/example.model';
 import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
