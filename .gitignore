@@ -64,4 +64,4 @@ bun.lock
 # Database & Kafka in local
 pgadmin-data/
 postgres-data
-kafka-data/
+kafka_data/

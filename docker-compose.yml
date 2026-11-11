@@ -11,6 +11,11 @@ services:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - genesis_network
 
@@ -24,15 +29,100 @@ services:
     ports:
       - "${PGADMIN_PORT:-5050}:80"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     volumes:
       - ./pgadmin-data:/var/lib/pgadmin
+    networks:
+      - genesis_network
+
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: genesis_kafka
+    hostname: genesis_kafka
+    restart: unless-stopped
+    ports:
+      - "${KAFKA_PORT:-9092}:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@genesis_kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      # Dos listeners: INTERNAL para contenedores en Docker, EXTERNAL para apps en el host / externas
+      KAFKA_LISTENERS: INTERNAL://:29092,EXTERNAL://:9092,CONTROLLER://genesis_kafka:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://genesis_kafka:29092,EXTERNAL://${KAFKA_ADVERTISED_HOST:-localhost}:${KAFKA_PORT:-9092}
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      # Configuración para cluster de 1 nodo (desarrollo / single-node)
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:29092 > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 15s
+    networks:
+      - genesis_network
+
+  kafka-init:
+    image: apache/kafka:3.9.0
+    container_name: genesis_kafka_init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Inicializando topics de Kafka..."
+        # Topic principal para stream de datos
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server genesis_kafka:29092 \
+          --create --if-not-exists \
+          --topic ${KAFKA_STREAM_TOPIC:-genesis.stream.events} \
+          --partitions 3 \
+          --replication-factor 1 \
+          --config retention.ms=604800000
+
+        # Topic dedicado para fallos y análisis posterior (Dead Letter Queue / Post-Mortem)
+        # Retención extendida a 30 días (2592000000 ms) para permitir auditoría y reprocesamiento
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server genesis_kafka:29092 \
+          --create --if-not-exists \
+          --topic ${KAFKA_FAILURE_TOPIC:-genesis.stream.failures} \
+          --partitions 3 \
+          --replication-factor 1 \
+          --config retention.ms=2592000000
+
+        echo "Topics creados exitosamente:"
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server genesis_kafka:29092 --list
+    networks:
+      - genesis_network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: genesis_kafka_ui
+    restart: unless-stopped
+    ports:
+      - "${KAFKA_UI_PORT:-8080}:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: genesis-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: genesis_kafka:29092
+      DYNAMIC_CONFIG_ENABLED: "true"
+    depends_on:
+      kafka:
+        condition: service_healthy
     networks:
       - genesis_network
 
 volumes:
   postgres_data:
   pgadmin_data:
+  kafka_data:
 
 networks:
   genesis_network:
